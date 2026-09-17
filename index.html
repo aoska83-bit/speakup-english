@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SpeakUp! – English Speaking Skills</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {theme:{extend:{
+  fontFamily:{sans:['Nunito','Sarabun','ui-sans-serif','system-ui']},
+  colors:{brand:{50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81'}},
+  boxShadow:{soft:'0 10px 30px -12px rgba(49,46,129,.35)',glow:'0 0 0 4px rgba(99,102,241,.15)'},
+  animation:{pop:'pop .35s ease-out',fade:'fade .4s ease-out',slide:'slide .35s ease-out'},
+  keyframes:{pop:{'0%':{transform:'scale(.9)',opacity:0},'100%':{transform:'scale(1)',opacity:1}},
+             fade:{'0%':{opacity:0,transform:'translateY(10px)'},'100%':{opacity:1,transform:'translateY(0)'}},
+             slide:{'0%':{transform:'translateX(-100%)'},'100%':{transform:'translateX(0)'}}}
+}}}
+</script>
+<style>
+  ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#c7d2fe;border-radius:99px}
+  body{-webkit-tap-highlight-color:transparent}
+  .glass{background:rgba(255,255,255,.75);backdrop-filter:blur(14px)}
+  .mesh{background:radial-gradient(at 15% 12%,#c7d2fe 0,transparent 55%),radial-gradient(at 85% 10%,#bae6fd 0,transparent 50%),radial-gradient(at 50% 95%,#fbcfe8 0,transparent 55%),#f1f5f9}
+  @media print{.no-print{display:none!important}body{background:#fff}}
+</style>
+</head>
+<body class="mesh min-h-screen font-sans text-slate-800">
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   SpeakUp! – Interactive English Speaking Courseware
+   ============================================================ */
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const app = () => $('#app');
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle = a => {a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+const photo = (tag,lock) => `https://loremflickr.com/480/360/${encodeURIComponent(tag)}?lock=${lock}`;
+const ph = emoji => `data:image/svg+xml;utf8,`+encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e0e7ff"/><stop offset="1" stop-color="#bae6fd"/></linearGradient></defs><rect width="480" height="360" fill="url(#g)"/><text x="50%" y="58%" font-size="140" text-anchor="middle">${emoji}</text></svg>`);
+const imgTag = (tag,lock,emoji,cls='') =>
+  `<img src="${photo(tag,lock)}" onerror="this.onerror=null;this.src='${ph(emoji)}'" loading="lazy" alt="${esc(tag)}" class="${cls}">`;
+
+/* ---------- Text to Speech ---------- */
+let VOICE=null;
+function loadVoices(){
+  const v = speechSynthesis.getVoices();
+  VOICE = v.find(x=>/en-GB|en-US/.test(x.lang)&&/Google|Samantha|Karen|Natural/i.test(x.name))
+       || v.find(x=>x.lang&&x.lang.startsWith('en')) || null;
+}
+if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
+function speak(text,rate=.92,done){
+  if(!('speechSynthesis' in window)){alert('Sorry, your browser does not support audio playback.');return;}
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='en-US';u.rate=rate;u.pitch=1;if(VOICE)u.voice=VOICE;
+  if(done)u.onend=done;
+  speechSynthesis.speak(u);
+}
+function stopSpeak(){if('speechSynthesis' in window)speechSynthesis.cancel();}
+
+/* ============================================================
+   LESSON DATA  (5 units x 3 steps)
+   ============================================================ */
+const DATA = [
+{
+ id:'restaurant', name:'Restaurant', icon:'🍽️', cover:'restaurant,dining', theme:'from-rose-500 to-orange-400',
+ words:[
+  {en:'menu',th:'เมนูอาหาร / รายการอาหาร',tag:'restaurant,menu',e:'📋'},
+  {en:'waiter',th:'พนักงานเสิร์ฟ (ชาย)',tag:'waiter,restaurant',e:'🤵'},
+  {en:'chef',th:'พ่อครัว / เชฟ',tag:'chef,cooking',e:'👨‍🍳'},
+  {en:'order',th:'สั่งอาหาร / คำสั่งอาหาร',tag:'ordering,food',e:'📝'},
+  {en:'bill',th:'บิล / ใบเก็บเงิน',tag:'restaurant,bill',e:'🧾'},
+  {en:'fork',th:'ส้อม',tag:'fork,cutlery',e:'🍴'},
+  {en:'spoon',th:'ช้อน',tag:'spoon,cutlery',e:'🥄'},
+  {en:'plate',th:'จาน',tag:'plate,dish',e:'🍽️'},
+  {en:'glass',th:'แก้วน้ำ',tag:'water,glass',e:'🥛'},
+  {en:'dessert',th:'ของหวาน / ขนมหวาน',tag:'dessert,cake',e:'🍰'}
+ ],
+ sentences:[
+  {en:'May I see the menu, please?',th:'ขอดูเมนูหน่อยได้ไหมครับ/คะ',k:'menu'},
+  {en:'The waiter is bringing our food now.',th:'พนักงานเสิร์ฟกำลังยกอาหารมาให้เราแล้ว',k:'waiter'},
+  {en:'I would like to order fried rice, please.',th:'ผม/ดิฉันขอสั่งข้าวผัดครับ/ค่ะ',k:'order'},
+  {en:'Could we have the bill, please?',th:'ขอบิลด้วยได้ไหมครับ/คะ',k:'bill'},
+  {en:'The chef cooks delicious Thai food.',th:'เชฟทำอาหารไทยได้อร่อยมาก',k:'chef'},
+  {en:'Please give me a fork and a knife.',th:'ขอส้อมกับมีดให้หน่อยครับ/ค่ะ',k:'fork'},
+  {en:'Be careful, the plate is very hot.',th:'ระวังนะ จานร้อนมาก',k:'plate'},
+  {en:'Can I have a glass of cold water?',th:'ขอน้ำเย็นหนึ่งแก้วได้ไหมครับ/คะ',k:'glass'},
+  {en:'What do you recommend for dessert?',th:'คุณแนะนำของหวานอะไรดีครับ/คะ',k:'dessert'},
+  {en:'Please bring me a clean spoon.',th:'ช่วยเอาช้อนสะอาดมาให้หน่อยครับ/ค่ะ',k:'spoon'}
+ ],
+ dialogue:{
+  title:'Ordering Food at a Restaurant', scene:'restaurant,waiter', emoji:'🍽️',
+  roleA:'Waiter', roleB:'Customer (You)',
+  lines:[
+   {r:'A',en:'Good evening. Welcome to Green Garden Restaurant. A table for how many?',th:'สวัสดีตอนเย็นครับ ยินดีต้อนรับสู่ร้านกรีนการ์เดน กี่ท่านครับ'},
+   {r:'B',en:'Good evening. A table for two, please.',th:'สวัสดีค่ะ ขอโต๊ะสำหรับสองคนค่ะ'},
+   {r:'A',en:'This way, please. Here is the menu.',th:'เชิญทางนี้ครับ นี่เมนูครับ'},
+   {r:'B',en:'Thank you. What do you recommend?',th:'ขอบคุณค่ะ คุณแนะนำอะไรดีคะ'},
+   {r:'A',en:'Our green curry with chicken is very popular.',th:'แกงเขียวหวานไก่ของเราเป็นที่นิยมมากครับ'},
+   {r:'B',en:'That sounds great. I would like to order green curry and a glass of water.',th:'น่าอร่อยมากค่ะ ขอสั่งแกงเขียวหวานกับน้ำเปล่าหนึ่งแก้วค่ะ'},
+   {r:'A',en:'Would you like any dessert?',th:'รับของหวานด้วยไหมครับ'},
+   {r:'B',en:'Yes, please. Mango sticky rice for me.',th:'ค่ะ ขอข้าวเหนียวมะม่วงค่ะ'},
+   {r:'A',en:'Certainly. Your food will be ready in ten minutes.',th:'ได้ครับ อาหารจะเสร็จในสิบนาทีครับ'},
+   {r:'B',en:'Thank you very much. Could we have the bill later?',th:'ขอบคุณมากค่ะ เดี๋ยวขอบิลด้วยนะคะ'}
+  ],
+  quiz:[
+   {q:'Where does this conversation happen?',c:['At a hospital','At a restaurant','At a bus station','At the beach'],a:1},
+   {q:'How many people need a table?',c:['One','Two','Three','Four'],a:1},
+   {q:'What does the waiter recommend?',c:['Fried rice','Tom yum soup','Green curry with chicken','Pizza'],a:2},
+   {q:'What dessert does the customer order?',c:['Ice cream','Chocolate cake','Mango sticky rice','Fresh fruit'],a:2}
+  ]
+ }
+},
+{
+ id:'shopping', name:'Shopping Center', icon:'🛍️', cover:'shopping,mall', theme:'from-fuchsia-500 to-pink-400',
+ words:[
+  {en:'cashier',th:'พนักงานเก็บเงิน / แคชเชียร์',tag:'cashier,shop',e:'💁'},
+  {en:'fitting room',th:'ห้องลองเสื้อผ้า',tag:'fitting,room',e:'🚪'},
+  {en:'price tag',th:'ป้ายราคา',tag:'price,tag',e:'🏷️'},
+  {en:'discount',th:'ส่วนลด',tag:'sale,discount',e:'💸'},
+  {en:'escalator',th:'บันไดเลื่อน',tag:'escalator,mall',e:'🛗'},
+  {en:'shopping cart',th:'รถเข็นซื้อของ',tag:'shopping,cart',e:'🛒'},
+  {en:'receipt',th:'ใบเสร็จรับเงิน',tag:'receipt,paper',e:'🧾'},
+  {en:'size',th:'ขนาด / ไซซ์',tag:'clothes,size',e:'📏'},
+  {en:'customer',th:'ลูกค้า',tag:'customer,shopping',e:'🧑‍🤝‍🧑'},
+  {en:'credit card',th:'บัตรเครดิต',tag:'credit,card',e:'💳'}
+ ],
+ sentences:[
+  {en:'You can pay at the cashier over there.',th:'คุณจ่ายเงินได้ที่แคชเชียร์ตรงโน้น',k:'cashier'},
+  {en:'May I try this shirt on in the fitting room?',th:'ขอลองเสื้อตัวนี้ในห้องลองได้ไหมครับ/คะ',k:'fitting room'},
+  {en:'Please check the price tag before you buy it.',th:'กรุณาดูป้ายราคาก่อนซื้อ',k:'price tag'},
+  {en:'This shop gives a fifty percent discount today.',th:'ร้านนี้ลดราคาห้าสิบเปอร์เซ็นต์วันนี้',k:'discount'},
+  {en:'Let us take the escalator to the second floor.',th:'ไปขึ้นบันไดเลื่อนไปชั้นสองกันเถอะ',k:'escalator'},
+  {en:'My shopping cart is full of snacks.',th:'รถเข็นของฉันเต็มไปด้วยขนม',k:'shopping cart'},
+  {en:'Keep the receipt if you want to change the item.',th:'เก็บใบเสร็จไว้ถ้าคุณต้องการเปลี่ยนสินค้า',k:'receipt'},
+  {en:'Do you have this dress in a bigger size?',th:'ชุดนี้มีไซซ์ใหญ่กว่านี้ไหมคะ/ครับ',k:'size'},
+  {en:'The customer is asking about the price.',th:'ลูกค้ากำลังถามเกี่ยวกับราคา',k:'customer'},
+  {en:'Can I pay by credit card?',th:'จ่ายด้วยบัตรเครดิตได้ไหมครับ/คะ',k:'credit card'}
+ ],
+ dialogue:{
+  title:'Buying Clothes at the Shopping Center', scene:'clothing,store', emoji:'🛍️',
+  roleA:'Shop Assistant', roleB:'Customer (You)',
+  lines:[
+   {r:'A',en:'Hello! Can I help you find something?',th:'สวัสดีค่ะ ให้ช่วยหาอะไรไหมคะ'},
+   {r:'B',en:'Yes, please. I am looking for a blue T-shirt.',th:'ค่ะ ผม/ดิฉันกำลังหาเสื้อยืดสีน้ำเงินครับ/ค่ะ'},
+   {r:'A',en:'What size do you wear?',th:'คุณใส่ไซซ์อะไรคะ'},
+   {r:'B',en:'I usually wear a medium size.',th:'ปกติผม/ดิฉันใส่ไซซ์กลางครับ/ค่ะ'},
+   {r:'A',en:'Here you are. You can try it on in the fitting room.',th:'นี่ค่ะ ลองใส่ได้ที่ห้องลองเสื้อนะคะ'},
+   {r:'B',en:'Thank you. How much does it cost?',th:'ขอบคุณครับ/ค่ะ ราคาเท่าไหร่ครับ/คะ'},
+   {r:'A',en:'It is 590 baht, but today we have a twenty percent discount.',th:'ราคา 590 บาทค่ะ แต่วันนี้ลด 20 เปอร์เซ็นต์ค่ะ'},
+   {r:'B',en:'Great! I will take it. Can I pay by credit card?',th:'ดีเลยครับ/ค่ะ ผม/ดิฉันเอาตัวนี้ จ่ายด้วยบัตรเครดิตได้ไหมครับ/คะ'},
+   {r:'A',en:'Of course. Please pay at the cashier and keep your receipt.',th:'ได้ค่ะ เชิญจ่ายเงินที่แคชเชียร์และเก็บใบเสร็จไว้นะคะ'},
+   {r:'B',en:'Thank you for your help. Have a nice day!',th:'ขอบคุณสำหรับความช่วยเหลือครับ/ค่ะ ขอให้เป็นวันที่ดีนะครับ/คะ'}
+  ],
+  quiz:[
+   {q:'What is the customer looking for?',c:['A blue T-shirt','A pair of shoes','A black bag','A red cap'],a:0},
+   {q:'What size does the customer wear?',c:['Small','Medium','Large','Extra large'],a:1},
+   {q:'How much discount does the shop give today?',c:['10 percent','20 percent','30 percent','50 percent'],a:1},
+   {q:'How does the customer want to pay?',c:['Cash','Credit card','Bank transfer','Coupon'],a:1}
+  ]
+ }
+},
+{
+ id:'hospital', name:'Hospital', icon:'🏥', cover:'hospital,clinic', theme:'from-sky-500 to-cyan-400',
+ words:[
+  {en:'doctor',th:'แพทย์ / หมอ',tag:'doctor,hospital',e:'👨‍⚕️'},
+  {en:'nurse',th:'พยาบาล',tag:'nurse,hospital',e:'👩‍⚕️'},
+  {en:'patient',th:'คนไข้ / ผู้ป่วย',tag:'patient,hospital',e:'🤒'},
+  {en:'medicine',th:'ยา',tag:'medicine,pills',e:'💊'},
+  {en:'fever',th:'ไข้ / ตัวร้อน',tag:'fever,sick',e:'🤧'},
+  {en:'injection',th:'การฉีดยา',tag:'injection,vaccine',e:'💉'},
+  {en:'ambulance',th:'รถพยาบาล',tag:'ambulance',e:'🚑'},
+  {en:'appointment',th:'การนัดหมาย',tag:'appointment,calendar',e:'📅'},
+  {en:'pharmacy',th:'ห้องจ่ายยา / ร้านขายยา',tag:'pharmacy,drugstore',e:'🏪'},
+  {en:'thermometer',th:'ปรอทวัดไข้',tag:'thermometer,medical',e:'🌡️'}
+ ],
+ sentences:[
+  {en:'The doctor will see you in five minutes.',th:'คุณหมอจะตรวจคุณในอีกห้านาที',k:'doctor'},
+  {en:'The nurse is taking my temperature now.',th:'พยาบาลกำลังวัดอุณหภูมิให้ฉัน',k:'nurse'},
+  {en:'The patient is waiting in room number three.',th:'คนไข้กำลังรออยู่ในห้องหมายเลขสาม',k:'patient'},
+  {en:'Please take this medicine after every meal.',th:'กรุณารับประทานยานี้หลังอาหารทุกมื้อ',k:'medicine'},
+  {en:'I have a high fever and a bad headache.',th:'ฉันมีไข้สูงและปวดหัวมาก',k:'fever'},
+  {en:'The injection does not hurt very much.',th:'การฉีดยาไม่ได้เจ็บมากนัก',k:'injection'},
+  {en:'The ambulance arrived at the school very quickly.',th:'รถพยาบาลมาถึงโรงเรียนอย่างรวดเร็ว',k:'ambulance'},
+  {en:'I have an appointment with the dentist at three.',th:'ฉันมีนัดกับหมอฟันตอนบ่ายสามโมง',k:'appointment'},
+  {en:'You can get your pills at the pharmacy downstairs.',th:'คุณรับยาได้ที่ห้องจ่ายยาชั้นล่าง',k:'pharmacy'},
+  {en:'Put the thermometer under your arm, please.',th:'กรุณาหนีบปรอทวัดไข้ไว้ใต้รักแร้',k:'thermometer'}
+ ],
+ dialogue:{
+  title:'Seeing a Doctor at the Hospital', scene:'doctor,patient', emoji:'🏥',
+  roleA:'Doctor', roleB:'Student Patient (You)',
+  lines:[
+   {r:'A',en:'Good morning. Please sit down. What is the problem?',th:'สวัสดีตอนเช้าครับ เชิญนั่งครับ มีปัญหาอะไรครับ'},
+   {r:'B',en:'Good morning, doctor. I have a sore throat and a headache.',th:'สวัสดีค่ะคุณหมอ หนูเจ็บคอและปวดหัวค่ะ'},
+   {r:'A',en:'How long have you felt like this?',th:'คุณรู้สึกแบบนี้มานานแค่ไหนแล้วครับ'},
+   {r:'B',en:'For two days. I also have a fever at night.',th:'สองวันแล้วค่ะ ตอนกลางคืนหนูมีไข้ด้วย'},
+   {r:'A',en:'Let me check your temperature with this thermometer.',th:'ขอวัดอุณหภูมิด้วยปรอทนี้นะครับ'},
+   {r:'B',en:'All right. Is it serious, doctor?',th:'ได้ค่ะ อาการหนักไหมคะคุณหมอ'},
+   {r:'A',en:'Do not worry. You have a common cold.',th:'ไม่ต้องกังวลครับ คุณเป็นหวัดธรรมดา'},
+   {r:'B',en:'What should I do?',th:'หนูควรทำอย่างไรคะ'},
+   {r:'A',en:'Take this medicine three times a day and drink a lot of water.',th:'ทานยานี้วันละสามครั้งและดื่มน้ำมาก ๆ ครับ'},
+   {r:'B',en:'Thank you very much, doctor.',th:'ขอบคุณมากค่ะคุณหมอ'}
+  ],
+  quiz:[
+   {q:'What are the symptoms of the patient?',c:['Stomachache and cough','Sore throat and headache','Broken arm','Toothache'],a:1},
+   {q:'How long has the patient been sick?',c:['One day','Two days','One week','One month'],a:1},
+   {q:'What illness does the patient have?',c:['A common cold','Food poisoning','A broken leg','An allergy'],a:0},
+   {q:'How often must the patient take the medicine?',c:['Once a day','Twice a day','Three times a day','Only at night'],a:2}
+  ]
+ }
+},
+{
+ id:'beach', name:'Beach', icon:'🏖️', cover:'beach,sea', theme:'from-amber-400 to-teal-400',
+ words:[
+  {en:'sand',th:'ทราย',tag:'sand,beach',e:'🏝️'},
+  {en:'wave',th:'คลื่น',tag:'ocean,wave',e:'🌊'},
+  {en:'sunscreen',th:'ครีมกันแดด',tag:'sunscreen,lotion',e:'🧴'},
+  {en:'beach umbrella',th:'ร่มชายหาด',tag:'beach,umbrella',e:'⛱️'},
+  {en:'seashell',th:'เปลือกหอย',tag:'seashell,shell',e:'🐚'},
+  {en:'swimsuit',th:'ชุดว่ายน้ำ',tag:'swimsuit,beach',e:'🩱'},
+  {en:'lifeguard',th:'เจ้าหน้าที่ช่วยชีวิต',tag:'lifeguard,beach',e:'🛟'},
+  {en:'surfboard',th:'กระดานโต้คลื่น',tag:'surfboard,surfing',e:'🏄'},
+  {en:'towel',th:'ผ้าเช็ดตัว',tag:'beach,towel',e:'🧺'},
+  {en:'sunglasses',th:'แว่นกันแดด',tag:'sunglasses',e:'🕶️'}
+ ],
+ sentences:[
+  {en:'The sand is very hot at noon.',th:'ทรายร้อนมากตอนเที่ยงวัน',k:'sand'},
+  {en:'The waves are very big this afternoon.',th:'คลื่นใหญ่มากในบ่ายวันนี้',k:'wave'},
+  {en:'Do not forget to put on sunscreen.',th:'อย่าลืมทาครีมกันแดดนะ',k:'sunscreen'},
+  {en:'We are sitting under a beach umbrella.',th:'พวกเรากำลังนั่งอยู่ใต้ร่มชายหาด',k:'beach umbrella'},
+  {en:'I found a beautiful seashell in the sand.',th:'ฉันเจอเปลือกหอยสวย ๆ ในกองทราย',k:'seashell'},
+  {en:'She is wearing a new blue swimsuit.',th:'เธอกำลังใส่ชุดว่ายน้ำสีฟ้าตัวใหม่',k:'swimsuit'},
+  {en:'The lifeguard is watching the swimmers.',th:'เจ้าหน้าที่ช่วยชีวิตกำลังดูแลคนที่ว่ายน้ำ',k:'lifeguard'},
+  {en:'He can stand on a surfboard very well.',th:'เขายืนบนกระดานโต้คลื่นได้เก่งมาก',k:'surfboard'},
+  {en:'Bring a towel to dry your body.',th:'เอาผ้าเช็ดตัวมาเช็ดตัวให้แห้งด้วยนะ',k:'towel'},
+  {en:'I always wear sunglasses in the bright sun.',th:'ฉันใส่แว่นกันแดดเสมอเมื่อแดดจ้า',k:'sunglasses'}
+ ],
+ dialogue:{
+  title:'A Day Trip to the Beach', scene:'friends,beach', emoji:'🏖️',
+  roleA:'Nina', roleB:'Your Friend (You)',
+  lines:[
+   {r:'A',en:'Wow! The sea looks so blue today.',th:'ว้าว ทะเลวันนี้สีฟ้าสวยจัง'},
+   {r:'B',en:'Yes, it is beautiful. Let us put our towels near the beach umbrella.',th:'ใช่ สวยมากเลย เอาผ้าเช็ดตัวไปวางใกล้ ๆ ร่มชายหาดกันเถอะ'},
+   {r:'A',en:'Good idea. Did you bring the sunscreen?',th:'ความคิดดี เธอเอาครีมกันแดดมาไหม'},
+   {r:'B',en:'Of course. The sun is very strong, so we must put it on first.',th:'แน่นอน แดดแรงมาก เราต้องทาก่อนเลย'},
+   {r:'A',en:'Can you swim? The waves are quite big.',th:'เธอว่ายน้ำเป็นไหม คลื่นค่อนข้างใหญ่นะ'},
+   {r:'B',en:'Yes, I can, but I will stay close to the lifeguard.',th:'เป็นสิ แต่ฉันจะอยู่ใกล้ ๆ เจ้าหน้าที่ช่วยชีวิต'},
+   {r:'A',en:'Look at that seashell! It is so pretty.',th:'ดูเปลือกหอยนั่นสิ สวยจังเลย'},
+   {r:'B',en:'Let us collect some shells after swimming.',th:'ว่ายน้ำเสร็จแล้วไปเก็บเปลือกหอยกันนะ'},
+   {r:'A',en:'Sure. And later we can eat seafood near the beach.',th:'ได้เลย แล้วเดี๋ยวเราไปกินอาหารทะเลใกล้ ๆ ชายหาดกัน'},
+   {r:'B',en:'That sounds perfect. What a wonderful day!',th:'ฟังดูดีมาก ช่างเป็นวันที่ยอดเยี่ยมจริง ๆ'}
+  ],
+  quiz:[
+   {q:'Where are the two friends?',c:['At a hospital','At the beach','At a shopping center','At a train station'],a:1},
+   {q:'Why must they put on sunscreen?',c:['The sun is very strong','It is raining','The water is cold','The sand is wet'],a:0},
+   {q:'Where will the speaker stay while swimming?',c:['Far from the shore','Close to the lifeguard','On the surfboard','Under the umbrella'],a:1},
+   {q:'What will they do after swimming?',c:['Go home','Collect seashells','Play football','Take a bus'],a:1}
+  ]
+ }
+},
+{
+ id:'transport', name:'Transportation', icon:'🚌', cover:'transport,city', theme:'from-emerald-500 to-lime-400',
+ words:[
+  {en:'bus',th:'รถประจำทาง / รถเมล์',tag:'bus,city',e:'🚌'},
+  {en:'train',th:'รถไฟ',tag:'train,railway',e:'🚆'},
+  {en:'taxi',th:'รถแท็กซี่',tag:'taxi,car',e:'🚕'},
+  {en:'airplane',th:'เครื่องบิน',tag:'airplane,sky',e:'✈️'},
+  {en:'ticket',th:'ตั๋วโดยสาร',tag:'ticket,travel',e:'🎫'},
+  {en:'station',th:'สถานี',tag:'train,station',e:'🚉'},
+  {en:'bicycle',th:'จักรยาน',tag:'bicycle',e:'🚲'},
+  {en:'motorcycle',th:'รถจักรยานยนต์',tag:'motorcycle',e:'🏍️'},
+  {en:'boat',th:'เรือ',tag:'boat,river',e:'⛵'},
+  {en:'traffic light',th:'สัญญาณไฟจราจร',tag:'traffic,light',e:'🚦'}
+ ],
+ sentences:[
+  {en:'I go to school by bus every morning.',th:'ฉันไปโรงเรียนด้วยรถเมล์ทุกเช้า',k:'bus'},
+  {en:'The train leaves at seven o clock.',th:'รถไฟออกเวลาเจ็ดนาฬิกา',k:'train'},
+  {en:'Let us take a taxi to the airport.',th:'ไปสนามบินด้วยแท็กซี่กันเถอะ',k:'taxi'},
+  {en:'The airplane is flying above the clouds.',th:'เครื่องบินกำลังบินอยู่เหนือก้อนเมฆ',k:'airplane'},
+  {en:'Please buy a ticket before you get on.',th:'กรุณาซื้อตั๋วก่อนขึ้นรถ',k:'ticket'},
+  {en:'We will meet at the train station at noon.',th:'เราจะเจอกันที่สถานีรถไฟตอนเที่ยง',k:'station'},
+  {en:'He rides his bicycle in the park every evening.',th:'เขาขี่จักรยานในสวนสาธารณะทุกเย็น',k:'bicycle'},
+  {en:'Always wear a helmet when you ride a motorcycle.',th:'สวมหมวกกันน็อกทุกครั้งเมื่อขี่รถจักรยานยนต์',k:'motorcycle'},
+  {en:'We crossed the big river by boat.',th:'พวกเราข้ามแม่น้ำสายใหญ่ด้วยเรือ',k:'boat'},
+  {en:'You must stop when the traffic light is red.',th:'คุณต้องหยุดเมื่อสัญญาณไฟจราจรเป็นสีแดง',k:'traffic light'}
+ ],
+ dialogue:{
+  title:'Asking for Directions at the Bus Station', scene:'bus,station', emoji:'🚌',
+  roleA:'Officer', roleB:'Traveller (You)',
+  lines:[
+   {r:'B',en:'Excuse me, does this bus go to Central Market?',th:'ขอโทษครับ/ค่ะ รถเมล์คันนี้ไปตลาดกลางไหมครับ/คะ'},
+   {r:'A',en:'No, it does not. You need bus number 15.',th:'ไม่ครับ คุณต้องขึ้นรถเมล์สาย 15 ครับ'},
+   {r:'B',en:'Where can I buy a ticket?',th:'ผม/ดิฉันซื้อตั๋วได้ที่ไหนครับ/คะ'},
+   {r:'A',en:'You can buy it at the counter next to the entrance.',th:'ซื้อได้ที่เคาน์เตอร์ข้างทางเข้าครับ'},
+   {r:'B',en:'How much is the ticket?',th:'ตั๋วราคาเท่าไหร่ครับ/คะ'},
+   {r:'A',en:'It is 25 baht. The bus comes every fifteen minutes.',th:'ราคา 25 บาทครับ รถมาทุก ๆ สิบห้านาที'},
+   {r:'B',en:'How long does it take to get there?',th:'ใช้เวลาเดินทางนานแค่ไหนครับ/คะ'},
+   {r:'A',en:'About thirty minutes if the traffic is not heavy.',th:'ประมาณสามสิบนาทีถ้ารถไม่ติดครับ'},
+   {r:'B',en:'Thank you very much for your help.',th:'ขอบคุณมากสำหรับความช่วยเหลือครับ/ค่ะ'},
+   {r:'A',en:'You are welcome. Have a safe trip!',th:'ยินดีครับ ขอให้เดินทางปลอดภัยนะครับ'}
+  ],
+  quiz:[
+   {q:'Which bus goes to Central Market?',c:['Number 5','Number 15','Number 25','Number 50'],a:1},
+   {q:'Where can the traveller buy a ticket?',c:['On the bus','At the counter next to the entrance','From the driver','At the market'],a:1},
+   {q:'How much is the ticket?',c:['15 baht','20 baht','25 baht','30 baht'],a:2},
+   {q:'How long is the trip when traffic is light?',c:['15 minutes','30 minutes','45 minutes','1 hour'],a:1}
+  ]
+ }
+}
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {view:'login', student:null, topic:null, scores:{}};
+const key = s => `speakup_${s.name}_${s.cls}_${s.no}`.replace(/\s+/g,'_');
+function saveScores(){ if(state.student) localStorage.setItem(key(state.student), JSON.stringify(state.scores)); }
+function loadScores(){ try{ state.scores = JSON.parse(localStorage.getItem(key(state.student))||'{}'); }catch(e){ state.scores={}; } }
+function setScore(tid,step,score,total){
+  state.scores[tid]=state.scores[tid]||{};
+  const prev=state.scores[tid][step];
+  if(!prev||score>prev.score) state.scores[tid][step]={score,total};
+  saveScores();
+}
+const getScore=(tid,step)=>(state.scores[tid]||{})[step];
+function topicProgress(tid){ let done=0; for(let s=1;s<=3;s++){const r=getScore(tid,s); if(r&&r.score/r.total>=.6)done++;} return done; }
+function totalStars(){ return DATA.reduce((n,t)=>n+topicProgress(t.id),0); }
+
+/* ============================================================
+   UI SHELL
+   ============================================================ */
+function iconBtn(label,svg,cls=''){return `<span class="inline-flex items-center gap-2 ${cls}">${svg}<span>${label}</span></span>`;}
+const ICO={
+  play:'<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 3.8A1 1 0 004.8 4.7v10.6a1 1 0 001.5.87l8.5-5.3a1 1 0 000-1.74L6.3 3.8z"/></svg>',
+  sound:'<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.4 3.2 5.8 6H3a1 1 0 00-1 1v6a1 1 0 001 1h2.8l3.6 2.8a1 1 0 001.6-.8V4a1 1 0 00-1.6-.8z"/><path d="M14 6.5a1 1 0 011.4 0 5 5 0 010 7 1 1 0 11-1.4-1.4 3 3 0 000-4.2 1 1 0 010-1.4z"/></svg>',
+  back:'<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>',
+  next:'<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>',
+  quiz:'<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+  mic:'<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a3 3 0 003-3V5a3 3 0 10-6 0v4a3 3 0 003 3z"/><path d="M5 9a1 1 0 112 0 3 3 0 006 0 1 1 0 112 0 5 5 0 01-4 4.9V16h2a1 1 0 110 2H7a1 1 0 110-2h2v-2.1A5 5 0 015 9z"/></svg>',
+  star:'<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1.8l2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.7-5 2.7 1-5.6-4.1-3.9 5.6-.8L10 1.8z"/></svg>',
+  home:'<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>',
+  chart:'<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V9m6 10V5M3 19h18"/></svg>',
+  menu:'<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>'
+};
+
+function shell(content,activeId){
+  const s=state.student;
+  return `
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="no-print fixed lg:static z-40 inset-y-0 left-0 w-72 -translate-x-full lg:translate-x-0 transition-transform duration-300 bg-brand-900 text-white flex flex-col">
+      <div class="px-5 py-6 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-400 to-sky-400 grid place-items-center text-xl shadow-soft">🎧</div>
+          <div><p class="font-black text-lg leading-none">SpeakUp!</p>
+          <p class="text-[11px] text-brand-200 mt-1">English Speaking Courseware</p></div>
+        </div>
+      </div>
+      <div class="px-5 py-4 border-b border-white/10">
+        <p class="text-xs text-brand-300 uppercase tracking-wider">Student</p>
+        <p class="font-bold truncate">${esc(s.name)}</p>
+        <p class="text-xs text-brand-200">Class ${esc(s.cls)} · No. ${esc(s.no)}</p>
+        <div class="mt-3 flex items-center gap-2 text-amber-300 text-sm font-bold">${ICO.star}<span>${totalStars()} / 15 stars</span></div>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-3 space-y-1">
+        <p class="px-3 pt-2 pb-1 text-[11px] uppercase tracking-wider text-brand-300">Learning Units</p>
+        ${DATA.map(t=>`
+          <button onclick="go('topic','${t.id}')" class="w-full group flex items-center gap-3 px-3 py-3 rounded-2xl transition ${activeId===t.id?'bg-white text-brand-900 shadow-soft':'hover:bg-white/10'}">
+            <span class="text-xl">${t.icon}</span>
+            <span class="flex-1 text-left font-bold text-sm">${t.name}</span>
+            <span class="text-[10px] font-bold px-2 py-1 rounded-full ${activeId===t.id?'bg-brand-100 text-brand-700':'bg-white/15'}">${topicProgress(t.id)}/3</span>
+          </button>`).join('')}
+        <p class="px-3 pt-4 pb-1 text-[11px] uppercase tracking-wider text-brand-300">More</p>
+        <button onclick="go('home')" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-white/10 text-sm font-bold">${ICO.home}<span>Home</span></button>
+        <button onclick="go('report')" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-white/10 text-sm font-bold">${ICO.chart}<span>Progress Report</span></button>
+        <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-rose-500/20 text-sm font-bold text-rose-200">🚪<span>Log out</span></button>
+      </nav>
+      <p class="p-4 text-[10px] text-brand-300">Lower Secondary · Listening &amp; Speaking</p>
+    </aside>
+    <div id="overlay" onclick="toggleNav()" class="no-print fixed inset-0 bg-slate-900/50 z-30 hidden lg:hidden"></div>
+
+    <!-- Main -->
+    <main class="flex-1 min-w-0">
+      <header class="no-print sticky top-0 z-20 glass border-b border-white/60">
+        <div class="flex items-center gap-3 px-4 py-3">
+          <button onclick="toggleNav()" class="lg:hidden p-2 rounded-xl bg-white shadow">${ICO.menu}</button>
+          <h1 class="font-black text-brand-900 truncate">${activeId?DATA.find(t=>t.id===activeId).name:'Dashboard'}</h1>
+          <div class="ml-auto flex items-center gap-1 text-amber-500 font-bold text-sm">${ICO.star}${totalStars()}</div>
+        </div>
+      </header>
+      <div class="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade">${content}</div>
+    </main>
+  </div>`;
+}
+function toggleNav(){ $('#sidebar').classList.toggle('-translate-x-full'); $('#overlay').classList.toggle('hidden'); }
+function closeNav(){ if(window.innerWidth<1024){ $('#sidebar').classList.add('-translate-x-full'); $('#overlay').classList.add('hidden'); } }
+
+/* ============================================================
+   VIEWS
+   ============================================================ */
+function loginView(){
+  app().innerHTML=`
+  <div class="min-h-screen grid place-items-center p-5">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-6 animate-pop">
+        <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-brand-500 to-sky-400 grid place-items-center text-4xl shadow-soft">🎧</div>
+        <h1 class="mt-4 text-3xl font-black text-brand-900">SpeakUp!</h1>
+        <p class="text-slate-500 font-semibold">English Speaking Skills · Lower Secondary</p>
+      </div>
+      <form onsubmit="startLesson(event)" class="bg-white rounded-3xl shadow-soft p-6 space-y-4 animate-fade">
+        <p class="font-bold text-brand-900">Please fill in your information</p>
+        <label class="block">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Full Name</span>
+          <input id="inName" required placeholder="e.g. Somchai Jaidee" class="mt-1 w-full rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 px-4 py-3 outline-none font-semibold">
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Class</span>
+            <select id="inClass" required class="mt-1 w-full rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 px-3 py-3 outline-none font-semibold bg-white">
+              <option value="">Select</option><option>M.1/1</option><option>M.1/2</option><option>M.2/1</option><option>M.2/2</option><option>M.3/1</option><option>M.3/2</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Number</span>
+            <input id="inNo" required type="number" min="1" max="60" placeholder="e.g. 12" class="mt-1 w-full rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 px-4 py-3 outline-none font-semibold">
+          </label>
+        </div>
+        <button class="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-600 to-sky-500 text-white font-black text-lg shadow-soft active:scale-[.98] transition">Start Learning →</button>
+        <p class="text-center text-[11px] text-slate-400">Your scores are saved on this device only.</p>
+      </form>
+    </div>
+  </div>`;
+}
+function startLesson(e){
+  e.preventDefault();
+  state.student={name:$('#inName').value.trim(),cls:$('#inClass').value,no:$('#inNo').value};
+  loadScores(); go('home');
+}
+function logout(){ stopSpeak(); state.student=null; state.view='login'; render(); }
+
+function homeView(){
+  return `
+  <div class="rounded-3xl bg-gradient-to-br from-brand-600 via-brand-500 to-sky-400 text-white p-6 sm:p-8 shadow-soft">
+    <p class="text-brand-100 font-semibold">Welcome back,</p>
+    <h2 class="text-2xl sm:text-3xl font-black">${esc(state.student.name)} 👋</h2>
+    <p class="mt-2 text-brand-50 text-sm">Choose a unit and complete <b>3 steps</b>: Vocabulary → Sentences → Conversation &amp; Role-play.</p>
+    <div class="mt-5 bg-white/20 rounded-2xl p-3 flex items-center gap-3">
+      <div class="flex-1"><div class="h-2.5 bg-white/30 rounded-full overflow-hidden"><div class="h-full bg-amber-300 rounded-full transition-all" style="width:${totalStars()/15*100}%"></div></div></div>
+      <span class="text-sm font-black">${totalStars()}/15</span>
+    </div>
+  </div>
+  <h3 class="mt-8 mb-3 font-black text-brand-900 text-lg">Learning Units</h3>
+  <div class="grid sm:grid-cols-2 gap-4">
+    ${DATA.map((t,i)=>`
+    <button onclick="go('topic','${t.id}')" class="text-left bg-white rounded-3xl shadow-soft overflow-hidden group active:scale-[.99] transition">
+      <div class="relative h-36 overflow-hidden">
+        ${imgTag(t.cover,100+i,t.icon,'w-full h-full object-cover group-hover:scale-105 transition duration-500')}
+        <div class="absolute inset-0 bg-gradient-to-t ${t.theme} opacity-70"></div>
+        <div class="absolute bottom-3 left-4 text-white"><p class="text-3xl">${t.icon}</p><p class="font-black text-xl drop-shadow">${t.name}</p></div>
+      </div>
+      <div class="p-4 flex items-center gap-3">
+        <div class="flex-1">
+          <div class="flex gap-1">${[1,2,3].map(s=>`<span class="h-2 flex-1 rounded-full ${topicProgress(t.id)>=s?'bg-amber-400':'bg-slate-200'}"></span>`).join('')}</div>
+          <p class="text-xs text-slate-500 font-semibold mt-1">${topicProgress(t.id)} of 3 steps passed</p>
+        </div>
+        <span class="text-brand-600">${ICO.next}</span>
+      </div>
+    </button>`).join('')}
+  </div>`;
+}
+
+function topicView(t){
+  const steps=[
+   {n:1,title:'Vocabulary',desc:'10 words with real photos, Thai meanings and audio.',icon:'🔤',color:'from-brand-500 to-indigo-400'},
+   {n:2,title:'Sentences',desc:'10 useful sentences you can listen to and repeat.',icon:'💬',color:'from-sky-500 to-cyan-400'},
+   {n:3,title:'Conversation & Role-play',desc:'A real-life dialogue. Listen, understand and act it out.',icon:'🎭',color:'from-fuchsia-500 to-rose-400'}
+  ];
+  return `
+  <div class="rounded-3xl overflow-hidden shadow-soft relative h-44">
+    ${imgTag(t.cover,200,t.icon,'w-full h-full object-cover')}
+    <div class="absolute inset-0 bg-gradient-to-t ${t.theme} opacity-75"></div>
+    <div class="absolute bottom-4 left-5 text-white">
+      <p class="text-4xl">${t.icon}</p><h2 class="text-2xl font-black drop-shadow">${t.name}</h2>
+      <p class="text-sm text-white/90 font-semibold">Complete all 3 steps to earn 3 stars</p>
+    </div>
+  </div>
+  <div class="mt-6 space-y-4">
+    ${steps.map(s=>{
+      const r=getScore(t.id,s.n); const passed=r&&r.score/r.total>=.6;
+      return `
+      <div class="bg-white rounded-3xl shadow-soft p-5 flex items-start gap-4">
+        <div class="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br ${s.color} grid place-items-center text-2xl text-white shadow">${s.icon}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="font-black text-brand-900">Step ${s.n}: ${s.title}</h3>
+            ${passed?'<span class="text-[10px] font-black px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">PASSED ⭐</span>':''}
+          </div>
+          <p class="text-sm text-slate-500 font-semibold mt-0.5">${s.desc}</p>
+          ${r?`<p class="text-xs font-bold mt-1 ${passed?'text-emerald-600':'text-amber-600'}">Best score: ${r.score}/${r.total}</p>`:''}
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button onclick="go('step',['${t.id}',${s.n}])" class="px-4 py-2 rounded-xl bg-brand-600 text-white font-bold text-sm shadow active:scale-95 transition">${iconBtn('Study',ICO.play)}</button>
+            <button onclick="go('test',['${t.id}',${s.n}])" class="px-4 py-2 rounded-xl bg-amber-400 text-amber-950 font-bold text-sm shadow active:scale-95 transition">${iconBtn('Take the Test',ICO.quiz)}</button>
+          </div>
+        </div>
+      </div>`;}).join('')}
+  </div>
+  <button onclick="go('home')" class="mt-6 px-4 py-2 rounded-xl bg-white shadow font-bold text-sm text-brand-700">${iconBtn('Back to Home',ICO.back)}</button>`;
+}
+
+/* ---------- STEP 1 : Vocabulary ---------- */
+function step1View(t){
+  return `
+  ${stepHeader(t,1,'Vocabulary','Tap a card to hear the word. Read the Thai meaning and repeat aloud.')}
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+   ${t.words.map((w,i)=>`
+    <div class="bg-white rounded-3xl shadow-soft overflow-hidden group">
+      <div class="relative h-28 sm:h-32 overflow-hidden bg-slate-100">
+        ${imgTag(w.tag,300+i,w.e,'w-full h-full object-cover group-hover:scale-110 transition duration-500')}
+        <span class="absolute top-2 left-2 text-[10px] font-black bg-white/90 text-brand-700 px-2 py-0.5 rounded-full">${i+1}</span>
+      </div>
+      <div class="p-3">
+        <p class="font-black text-brand-900 leading-tight">${w.en}</p>
+        <p class="text-xs text-slate-500 font-semibold" lang="th">${w.th}</p>
+        <button onclick="speak('${w.en.replace(/'/g,"\\'")}')" class="mt-2 w-full py-2 rounded-xl bg-brand-50 text-brand-700 font-bold text-xs active:scale-95 transition">${iconBtn('Listen',ICO.sound,'justify-center')}</button>
+      </div>
+    </div>`).join('')}
+  </div>
+  ${stepFooter(t,1)}`;
+}
+
+/* ---------- STEP 2 : Sentences ---------- */
+function step2View(t){
+  return `
+  ${stepHeader(t,2,'Sentences','Listen to each sentence, then say it aloud with the same rhythm.')}
+  <div class="space-y-3">
+   ${t.sentences.map((s,i)=>`
+    <div class="bg-white rounded-2xl shadow-soft p-4 flex items-start gap-3">
+      <span class="w-8 h-8 shrink-0 rounded-xl bg-brand-100 text-brand-700 font-black grid place-items-center text-sm">${i+1}</span>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-slate-800">${s.en}</p>
+        <p class="text-sm text-slate-500 font-semibold mt-0.5" lang="th">${s.th}</p>
+      </div>
+      <div class="flex flex-col gap-1">
+        <button onclick="speak(this.dataset.t)" data-t="${esc(s.en)}" class="p-2.5 rounded-xl bg-brand-600 text-white shadow active:scale-95" title="Normal speed">${ICO.sound}</button>
+        <button onclick="speak(this.dataset.t,0.6)" data-t="${esc(s.en)}" class="p-2.5 rounded-xl bg-sky-100 text-sky-700 active:scale-95 text-[10px] font-black" title="Slow speed">SLOW</button>
+      </div>
+    </div>`).join('')}
+  </div>
+  ${stepFooter(t,2)}`;
+}
+
+/* ---------- STEP 3 : Dialogue ---------- */
+function step3View(t){
+  const d=t.dialogue;
+  return `
+  ${stepHeader(t,3,'Conversation',"Read the situation, listen line by line, then try the role-play.")}
+  <div class="rounded-3xl overflow-hidden shadow-soft relative h-40 mb-4">
+    ${imgTag(d.scene,400,d.emoji,'w-full h-full object-cover')}
+    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+    <div class="absolute bottom-4 left-5 text-white">
+      <p class="text-xs font-bold bg-white/25 inline-block px-2 py-0.5 rounded-full">SITUATION</p>
+      <h3 class="font-black text-xl drop-shadow">${d.title}</h3>
+      <p class="text-xs">${d.roleA} &amp; ${d.roleB}</p>
+    </div>
+  </div>
+  <div class="flex gap-2 mb-4 flex-wrap">
+    <button onclick="playAll('${t.id}')" class="px-4 py-2.5 rounded-xl bg-brand-600 text-white font-bold text-sm shadow active:scale-95">${iconBtn('Play Whole Dialogue',ICO.play)}</button>
+    <button onclick="stopSpeak()" class="px-4 py-2.5 rounded-xl bg-white text-slate-600 font-bold text-sm shadow active:scale-95">⏹ Stop</button>
+    <button onclick="go('roleplay','${t.id}')" class="px-4 py-2.5 rounded-xl bg-fuchsia-500 text-white font-bold text-sm shadow active:scale-95">${iconBtn('Role-play Practice',ICO.mic)}</button>
+  </div>
+  <div class="space-y-3">
+   ${d.lines.map((l,i)=>{
+     const isA=l.r==='A';
+     return `
+     <div id="ln${i}" class="flex ${isA?'':'flex-row-reverse'} gap-2 items-end">
+       <div class="w-9 h-9 shrink-0 rounded-full grid place-items-center text-lg ${isA?'bg-brand-100':'bg-emerald-100'}">${isA?'🧑‍💼':'🧑‍🎓'}</div>
+       <div class="max-w-[82%] rounded-2xl p-3 shadow-soft ${isA?'bg-white rounded-bl-none':'bg-emerald-50 rounded-br-none'}">
+         <p class="text-[10px] font-black uppercase tracking-wide ${isA?'text-brand-500':'text-emerald-600'}">${isA?d.roleA:d.roleB}</p>
+         <p class="font-bold text-slate-800 mt-0.5">${l.en}</p>
+         <p class="text-xs text-slate-500 font-semibold" lang="th">${l.th}</p>
+         <button onclick="speak(this.dataset.t)" data-t="${esc(l.en)}" class="mt-2 inline-flex items-center gap-1 text-xs font-bold ${isA?'text-brand-600':'text-emerald-700'}">${ICO.sound} Listen</button>
+       </div>
+     </div>`;}).join('')}
+  </div>
+  ${stepFooter(t,3)}`;
+}
+function playAll(tid){
+  const d=DATA.find(x=>x.id===tid).dialogue; let i=0;
+  const next=()=>{ if(i>=d.lines.length)return;
+    const el=$('#ln'+i); if(el){el.classList.add('ring-2','ring-brand-400','rounded-2xl'); el.scrollIntoView({block:'center',behavior:'smooth'});}
+    const cur=i; speak(d.lines[i].en,.9,()=>{const e2=$('#ln'+cur); if(e2)e2.classList.remove('ring-2','ring-brand-400','rounded-2xl'); i++; setTimeout(next,320);});
+  }; stopSpeak(); next();
+}
+
+function stepHeader(t,n,title,tip){
+  return `
+  <div class="mb-5">
+    <button onclick="go('topic','${t.id}')" class="mb-3 px-3 py-1.5 rounded-xl bg-white shadow font-bold text-xs text-brand-700">${iconBtn('Back to Unit',ICO.back)}</button>
+    <div class="flex items-center gap-2 mb-2">${[1,2,3].map(i=>`<span class="h-1.5 flex-1 rounded-full ${i<=n?'bg-brand-600':'bg-slate-200'}"></span>`).join('')}</div>
+    <h2 class="text-xl font-black text-brand-900">${t.icon} Step ${n}: ${title}</h2>
+    <p class="text-sm text-slate-500 font-semibold">${tip}</p>
+  </div>`;
+}
+function stepFooter(t,n){
+  return `
+  <div class="no-print mt-7 bg-white rounded-3xl shadow-soft p-5 text-center">
+    <p class="font-black text-brand-900">Finished studying this step?</p>
+    <p class="text-sm text-slate-500 font-semibold">Take the test to check your understanding. You need 60% to pass.</p>
+    <div class="mt-4 flex gap-2 justify-center flex-wrap">
+      <button onclick="go('test',['${t.id}',${n}])" class="px-5 py-3 rounded-2xl bg-amber-400 text-amber-950 font-black shadow active:scale-95">${iconBtn('Take the Test',ICO.quiz)}</button>
+      ${n<3?`<button onclick="go('step',['${t.id}',${n+1}])" class="px-5 py-3 rounded-2xl bg-brand-600 text-white font-black shadow active:scale-95">${iconBtn('Next Step',ICO.next)}</button>`:''}
+      <button onclick="go('topic','${t.id}')" class="px-5 py-3 rounded-2xl bg-white border-2 border-slate-200 font-black text-slate-600">${iconBtn('Back to Lesson',ICO.back)}</button>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   QUIZ ENGINE
+   ============================================================ */
+function pick3(arr,notIdx,field){ return shuffle(arr.map((x,i)=>i).filter(i=>i!==notIdx)).slice(0,3).map(i=>arr[i][field]); }
+function build(correct,others,imgInfo,prompt){
+  const choices=shuffle([correct,...others]);
+  return {prompt,choices,a:choices.indexOf(correct),img:imgInfo||null};
+}
+function vocabQuiz(t){
+  const ws=t.words;
+  return shuffle(ws.map((w,i)=>i)).map((i,n)=>{
+    const w=ws[i];
+    if(n%2===0) return build(w.en,pick3(ws,i,'en'),{tag:w.tag,lock:300+i,e:w.e},'Look at the picture. What is it in English?');
+    return build(w.th,pick3(ws,i,'th'),null,`What does <span class="text-brand-700">"${w.en}"</span> mean in Thai?`);
+  });
+}
+function sentenceQuiz(t){
+  const ss=t.sentences, qs=[];
+  [0,2,4,6,8].forEach(i=>{
+    const s=ss[i];
+    const gap=s.en.replace(new RegExp(s.k,'i'),'<span class="px-6 border-b-2 border-brand-400 inline-block"></span>');
+    qs.push(build(s.k,pick3(ss,i,'k'),null,`Choose the correct word: <br><span class="text-slate-800">${gap}</span>`));
+  });
+  [1,3,5,7,9].forEach(i=>{
+    const s=ss[i];
+    qs.push(build(s.en,pick3(ss,i,'en'),null,`Which English sentence means:<br><span lang="th" class="text-brand-700">"${s.th}"</span>`));
+  });
+  return shuffle(qs);
+}
+function dialogueQuiz(t){ return t.dialogue.quiz.map(q=>({prompt:q.q,choices:q.c,a:q.a,img:null})); }
+
+let QZ=null;
+function testView(t,step){
+  QZ={t,step,qs:step===1?vocabQuiz(t):step===2?sentenceQuiz(t):dialogueQuiz(t),i:0,score:0,answered:false};
+  return quizBody();
+}
+function quizBody(){
+  const {t,step,qs,i,score}=QZ, q=qs[i];
+  return `
+  <div class="mb-4 flex items-center gap-3">
+    <button onclick="go('step',['${t.id}',${step}])" class="p-2 rounded-xl bg-white shadow text-brand-700">${ICO.back}</button>
+    <div class="flex-1"><div class="h-2 bg-white rounded-full overflow-hidden shadow-inner"><div class="h-full bg-gradient-to-r from-brand-500 to-sky-400 transition-all" style="width:${i/qs.length*100}%"></div></div></div>
+    <span class="font-black text-brand-900 text-sm">${i+1}/${qs.length}</span>
+  </div>
+  <div class="bg-white rounded-3xl shadow-soft p-5 sm:p-7 animate-pop">
+    <p class="text-[11px] font-black uppercase tracking-wider text-brand-500">Step ${step} Test · ${t.name}</p>
+    ${q.img?`<div class="mt-3 rounded-2xl overflow-hidden h-44 sm:h-56 bg-slate-100">${imgTag(q.img.tag,q.img.lock,q.img.e,'w-full h-full object-cover')}</div>`:''}
+    <p class="mt-4 text-lg font-black text-slate-800 leading-snug">${q.prompt}</p>
+    <div id="opts" class="mt-5 grid sm:grid-cols-2 gap-3">
+      ${q.choices.map((c,n)=>`
+      <button onclick="answer(${n})" data-n="${n}" class="opt text-left px-4 py-3.5 rounded-2xl border-2 border-slate-200 font-bold hover:border-brand-400 hover:bg-brand-50 active:scale-[.98] transition">
+        <span class="inline-grid place-items-center w-7 h-7 rounded-lg bg-slate-100 text-slate-600 text-xs font-black mr-2">${'ABCD'[n]}</span>${c}
+      </button>`).join('')}
+    </div>
+    <div id="fb" class="mt-4 hidden"></div>
+    <div class="mt-5 flex justify-between items-center">
+      <span class="text-sm font-bold text-slate-500">Score: <span class="text-brand-700">${score}</span></span>
+      <button id="nextBtn" onclick="nextQ()" class="hidden px-5 py-3 rounded-2xl bg-brand-600 text-white font-black shadow active:scale-95">${iconBtn('Next',ICO.next)}</button>
+    </div>
+  </div>`;
+}
+function answer(n){
+  if(QZ.answered)return; QZ.answered=true;
+  const q=QZ.qs[QZ.i], ok=n===q.a;
+  if(ok)QZ.score++;
+  document.querySelectorAll('.opt').forEach(b=>{
+    const k=+b.dataset.n; b.disabled=true;
+    if(k===q.a)b.className='opt text-left px-4 py-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 font-bold';
+    else if(k===n)b.className='opt text-left px-4 py-3.5 rounded-2xl border-2 border-rose-400 bg-rose-50 font-bold opacity-90';
+    else b.className='opt text-left px-4 py-3.5 rounded-2xl border-2 border-slate-100 font-bold opacity-50';
+  });
+  const fb=$('#fb'); fb.classList.remove('hidden');
+  fb.innerHTML= ok
+    ? `<div class="rounded-2xl bg-emerald-50 text-emerald-800 px-4 py-3 font-bold">✅ Excellent! That is correct.</div>`
+    : `<div class="rounded-2xl bg-rose-50 text-rose-800 px-4 py-3 font-bold">❌ Not quite. The correct answer is <b>${q.choices[q.a]}</b>.</div>`;
+  if(/^[A-Za-z ,.'?!-]+$/.test(q.choices[q.a])) speak(q.choices[q.a],.9);
+  $('#nextBtn').classList.remove('hidden');
+}
+function nextQ(){
+  QZ.i++; QZ.answered=false;
+  if(QZ.i>=QZ.qs.length){ finishQuiz(); return; }
+  app().innerHTML=shell(quizBody(),QZ.t.id);
+}
+function finishQuiz(){
+  const {t,step,qs,score}=QZ, total=qs.length, pct=Math.round(score/total*100), pass=pct>=60;
+  setScore(t.id,step,score,total);
+  const msg = pct===100?'Perfect! You are an English star! 🌟' : pass?'Well done! Keep practising your speaking.' : 'Good try! Review the lesson and test again.';
+  app().innerHTML=shell(`
+  <div class="bg-white rounded-3xl shadow-soft p-7 text-center animate-pop max-w-lg mx-auto">
+    <div class="text-6xl">${pass?'🎉':'💪'}</div>
+    <h2 class="mt-2 text-2xl font-black text-brand-900">${pass?'You passed!':'Try again'}</h2>
+    <p class="text-slate-500 font-semibold">${msg}</p>
+    <div class="my-6 relative w-36 h-36 mx-auto grid place-items-center rounded-full" style="background:conic-gradient(${pass?'#6366f1':'#f59e0b'} ${pct*3.6}deg,#e2e8f0 0)">
+      <div class="w-28 h-28 bg-white rounded-full grid place-items-center">
+        <div><p class="text-3xl font-black text-brand-900">${pct}%</p><p class="text-xs font-bold text-slate-500">${score}/${total}</p></div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <button onclick="go('test',['${t.id}',${step}])" class="px-5 py-3 rounded-2xl bg-amber-400 text-amber-950 font-black shadow">🔁 Retake Test</button>
+      <button onclick="go('step',['${t.id}',${step}])" class="px-5 py-3 rounded-2xl bg-white border-2 border-slate-200 font-black text-slate-600">${iconBtn('Back to Lesson',ICO.back)}</button>
+      ${step<3?`<button onclick="go('step',['${t.id}',${step+1}])" class="px-5 py-3 rounded-2xl bg-brand-600 text-white font-black shadow">${iconBtn('Next Step',ICO.next)}</button>`
+              :`<button onclick="go('roleplay','${t.id}')" class="px-5 py-3 rounded-2xl bg-fuchsia-500 text-white font-black shadow">${iconBtn('Role-play',ICO.mic)}</button>`}
+    </div>
+  </div>`,t.id);
+}
+
+/* ============================================================
+   ROLE-PLAY
+   ============================================================ */
+let RP=null;
+function roleplayView(t){
+  RP={t,role:null,i:0,results:[]};
+  return `
+  <button onclick="go('step',['${t.id}',3])" class="mb-4 px-3 py-1.5 rounded-xl bg-white shadow font-bold text-xs text-brand-700">${iconBtn('Back to Lesson',ICO.back)}</button>
+  <div class="bg-white rounded-3xl shadow-soft p-6 text-center max-w-lg mx-auto animate-pop">
+    <p class="text-4xl">🎭</p>
+    <h2 class="text-xl font-black text-brand-900 mt-1">Role-play: ${t.dialogue.title}</h2>
+    <p class="text-sm text-slate-500 font-semibold mt-1">Choose your character. The app will speak the other person's lines, and you speak yours.</p>
+    <div class="mt-5 grid sm:grid-cols-2 gap-3">
+      <button onclick="startRP('A')" class="p-5 rounded-2xl border-2 border-brand-200 bg-brand-50 font-black text-brand-800 active:scale-95">🧑‍💼<br>${t.dialogue.roleA}</button>
+      <button onclick="startRP('B')" class="p-5 rounded-2xl border-2 border-emerald-200 bg-emerald-50 font-black text-emerald-800 active:scale-95">🧑‍🎓<br>${t.dialogue.roleB}</button>
+    </div>
+    <p class="mt-4 text-[11px] text-slate-400">Tip: allow microphone access to get a pronunciation score (Chrome recommended).</p>
+  </div>`;
+}
+function startRP(role){ RP.role=role; RP.i=0; RP.results=[]; renderRP(); }
+function renderRP(){
+  const {t,role,i}=RP, d=t.dialogue;
+  if(i>=d.lines.length){ return rpFinish(); }
+  const l=d.lines[i], mine=l.r===role;
+  app().innerHTML=shell(`
+  <div class="mb-4 flex items-center gap-3">
+    <button onclick="go('step',['${t.id}',3])" class="p-2 rounded-xl bg-white shadow text-brand-700">${ICO.back}</button>
+    <div class="flex-1"><div class="h-2 bg-white rounded-full overflow-hidden"><div class="h-full bg-fuchsia-500 transition-all" style="width:${i/d.lines.length*100}%"></div></div></div>
+    <span class="font-black text-sm text-brand-900">${i+1}/${d.lines.length}</span>
+  </div>
+  <div class="bg-white rounded-3xl shadow-soft p-6 max-w-lg mx-auto text-center animate-pop">
+    <p class="text-[11px] font-black uppercase tracking-wider ${mine?'text-emerald-600':'text-brand-500'}">${mine?'YOUR TURN – speak now':'Listen to '+(l.r==='A'?d.roleA:d.roleB)}</p>
+    <p class="text-5xl my-3">${mine?'🎤':'🔊'}</p>
+    <p class="text-lg font-black text-slate-800 leading-snug">${l.en}</p>
+    <p class="text-sm text-slate-500 font-semibold mt-1" lang="th">${l.th}</p>
+    <div id="rpFb" class="mt-4"></div>
+    <div class="mt-5 flex flex-wrap gap-2 justify-center">
+      <button onclick="speak(this.dataset.t)" data-t="${esc(l.en)}" class="px-4 py-3 rounded-2xl bg-brand-50 text-brand-700 font-black">${iconBtn('Listen',ICO.sound)}</button>
+      ${mine?`<button id="recBtn" onclick="recordRP()" class="px-5 py-3 rounded-2xl bg-fuchsia-500 text-white font-black shadow">${iconBtn('Speak',ICO.mic)}</button>
+              <button onclick="rpNext(null)" class="px-4 py-3 rounded-2xl bg-white border-2 border-slate-200 font-black text-slate-600">Skip ▶</button>`
+             :`<button onclick="rpNext(null)" class="px-5 py-3 rounded-2xl bg-brand-600 text-white font-black shadow">${iconBtn('Next',ICO.next)}</button>`}
+    </div>
+  </div>`,t.id);
+  if(!mine) speak(l.en,.9);
+}
+function norm(s){return s.toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();}
+function similarity(said,target){
+  const a=norm(said).split(' ').filter(Boolean), b=new Set(norm(target).split(' ').filter(Boolean));
+  if(!a.length)return 0; let hit=0; a.forEach(w=>{if(b.has(w))hit++;});
+  return Math.round(hit/Math.max(b.size,1)*100);
+}
+function recordRP(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const fb=$('#rpFb');
+  if(!SR){ fb.innerHTML='<div class="rounded-2xl bg-amber-50 text-amber-800 px-4 py-3 font-bold text-sm">🎙️ Your browser cannot record speech. Say the sentence aloud, then press Skip ▶ to continue.</div>'; return; }
+  const r=new SR(); r.lang='en-US'; r.interimResults=false; r.maxAlternatives=1;
+  $('#recBtn').innerHTML='🔴 Listening...';
+  fb.innerHTML='<p class="text-sm font-bold text-fuchsia-600 animate-pulse">Listening… speak clearly!</p>';
+  r.onresult=e=>{
+    const said=e.results[0][0].transcript, sc=similarity(said,RP.t.dialogue.lines[RP.i].en);
+    fb.innerHTML=`<div class="rounded-2xl ${sc>=70?'bg-emerald-50 text-emerald-800':'bg-amber-50 text-amber-800'} px-4 py-3 font-bold text-sm">
+      You said: "${esc(said)}"<br>Pronunciation match: <b>${sc}%</b> ${sc>=70?'👏 Great job!':'🙂 Try once more!'}</div>`;
+    $('#recBtn').innerHTML=iconBtn('Try again',ICO.mic);
+    setTimeout(()=>rpNext(sc),1400);
+  };
+  r.onerror=()=>{ fb.innerHTML='<div class="rounded-2xl bg-rose-50 text-rose-700 px-4 py-3 font-bold text-sm">Microphone error. Please check permission or press Skip ▶.</div>'; $('#recBtn').innerHTML=iconBtn('Speak',ICO.mic); };
+  r.start();
+}
+function rpNext(score){ if(score!=null)RP.results.push(score); RP.i++; stopSpeak(); renderRP(); }
+function rpFinish(){
+  const avg=RP.results.length?Math.round(RP.results.reduce((a,b)=>a+b,0)/RP.results.length):null;
+  app().innerHTML=shell(`
+  <div class="bg-white rounded-3xl shadow-soft p-7 text-center max-w-lg mx-auto animate-pop">
+    <p class="text-6xl">🏆</p>
+    <h2 class="text-2xl font-black text-brand-900 mt-2">Role-play Completed!</h2>
+    <p class="text-slate-500 font-semibold">${avg!=null?`Average pronunciation match: <b class="text-brand-700">${avg}%</b>`:'You practised the whole conversation. Well done!'}</p>
+    <div class="mt-6 flex gap-2 justify-center flex-wrap">
+      <button onclick="go('roleplay','${RP.t.id}')" class="px-5 py-3 rounded-2xl bg-fuchsia-500 text-white font-black shadow">🔁 Practise Again</button>
+      <button onclick="go('step',['${RP.t.id}',3])" class="px-5 py-3 rounded-2xl bg-white border-2 border-slate-200 font-black text-slate-600">${iconBtn('Back to Lesson',ICO.back)}</button>
+      <button onclick="go('report')" class="px-5 py-3 rounded-2xl bg-brand-600 text-white font-black shadow">${iconBtn('My Report',ICO.chart)}</button>
+    </div>
+  </div>`,RP.t.id);
+}
+
+/* ============================================================
+   REPORT
+   ============================================================ */
+function reportView(){
+  const s=state.student;
+  let got=0,max=0;
+  const rows=DATA.map(t=>{
+    const cells=[1,2,3].map(n=>{const r=getScore(t.id,n); if(r){got+=r.score;max+=r.total;}
+      return r?`<td class="px-3 py-3 text-center font-bold ${r.score/r.total>=.6?'text-emerald-600':'text-amber-600'}">${r.score}/${r.total}</td>`
+              :`<td class="px-3 py-3 text-center text-slate-300 font-bold">–</td>`;}).join('');
+    return `<tr class="border-b border-slate-100"><td class="px-3 py-3 font-bold whitespace-nowrap">${t.icon} ${t.name}</td>${cells}<td class="px-3 py-3 text-center">${'⭐'.repeat(topicProgress(t.id))||'—'}</td></tr>`;
+  }).join('');
+  const pct=max?Math.round(got/max*100):0;
+  return `
+  <div class="bg-white rounded-3xl shadow-soft p-6">
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+      <div>
+        <h2 class="text-xl font-black text-brand-900">📊 Progress Report</h2>
+        <p class="text-sm font-semibold text-slate-600">${esc(s.name)} · Class ${esc(s.cls)} · No. ${esc(s.no)}</p>
+        <p class="text-xs text-slate-400">Course: English Speaking Skills for Lower Secondary Students</p>
+      </div>
+      <button onclick="window.print()" class="no-print px-4 py-2 rounded-xl bg-brand-600 text-white font-bold text-sm shadow">🖨️ Print</button>
+    </div>
+    <div class="mt-5 grid grid-cols-3 gap-3 text-center">
+      <div class="rounded-2xl bg-brand-50 p-4"><p class="text-2xl font-black text-brand-700">${totalStars()}/15</p><p class="text-[11px] font-bold text-slate-500 uppercase">Stars</p></div>
+      <div class="rounded-2xl bg-emerald-50 p-4"><p class="text-2xl font-black text-emerald-700">${got}/${max||0}</p><p class="text-[11px] font-bold text-slate-500 uppercase">Points</p></div>
+      <div class="rounded-2xl bg-amber-50 p-4"><p class="text-2xl font-black text-amber-600">${pct}%</p><p class="text-[11px] font-bold text-slate-500 uppercase">Average</p></div>
+    </div>
+    <div class="mt-5 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wide">
+          <th class="px-3 py-2 text-left">Unit</th><th class="px-3 py-2">Step 1<br>Vocabulary</th><th class="px-3 py-2">Step 2<br>Sentences</th><th class="px-3 py-2">Step 3<br>Conversation</th><th class="px-3 py-2">Stars</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <p class="mt-4 text-xs text-slate-400">Pass criterion: 60% of each test. Only the best score of each test is recorded.</p>
+  </div>`;
+}
+
+/* ============================================================
+   ROUTER
+   ============================================================ */
+function go(view,arg){
+  stopSpeak(); closeNav();
+  state.view=view;
+  if(view==='topic'){ state.topic=arg; }
+  if(view==='step'||view==='test'){ state.topic=arg[0]; state.step=arg[1]; }
+  if(view==='roleplay'){ state.topic=arg; }
+  render(); window.scrollTo({top:0,behavior:'smooth'});
+}
+function render(){
+  if(!state.student){ loginView(); return; }
+  const t=DATA.find(x=>x.id===state.topic);
+  switch(state.view){
+    case 'home': app().innerHTML=shell(homeView(),null); break;
+    case 'report': app().innerHTML=shell(reportView(),null); break;
+    case 'topic': app().innerHTML=shell(topicView(t),t.id); break;
+    case 'step': app().innerHTML=shell(state.step===1?step1View(t):state.step===2?step2View(t):step3View(t),t.id); break;
+    case 'test': app().innerHTML=shell(testView(t,state.step),t.id); break;
+    case 'roleplay': app().innerHTML=shell(roleplayView(t),t.id); break;
+    default: loginView();
+  }
+}
+render();
+</script>
+</body>
+</html>
