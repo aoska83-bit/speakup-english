@@ -26,6 +26,19 @@ tailwind.config = {theme:{extend:{
 </style>
 </head>
 <body class="mesh min-h-screen font-sans text-slate-800">
+<div id="errBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:#fff;padding:12px 16px;font:600 13px/1.4 sans-serif;white-space:pre-wrap;"></div>
+<script>
+window.addEventListener('error',function(e){
+  const b=document.getElementById('errBanner');
+  b.style.display='block';
+  b.textContent='JS Error: '+e.message+' (line '+e.lineno+')';
+});
+window.addEventListener('unhandledrejection',function(e){
+  const b=document.getElementById('errBanner');
+  b.style.display='block';
+  b.textContent='Promise Error: '+(e.reason && e.reason.message ? e.reason.message : e.reason);
+});
+</script>
 <div id="app"></div>
 
 <script>
@@ -431,57 +444,63 @@ function closeNav(){ if(window.innerWidth<1024){ $('#sidebar').classList.add('-t
    ============================================================ */
 function loginView(){
   app().innerHTML=`
-  <div class="min-h-screen grid place-items-center p-5">
+  <div class="min-h-screen flex flex-col items-center justify-center p-5 py-10" style="padding-bottom:45vh">
     <div class="w-full max-w-md">
       <div class="text-center mb-6 animate-pop">
         <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-brand-500 to-sky-400 grid place-items-center text-4xl shadow-soft">🎧</div>
         <h1 class="mt-4 text-3xl font-black text-brand-900">SpeakUp!</h1>
         <p class="text-slate-500 font-semibold">English Speaking Skills · Lower Secondary</p>
       </div>
-      <!-- ถอดแท็ก form ออกทั้งหมดเพื่อแก้ปัญหาเบราว์เซอร์ในมือถือ -->
+      <!-- เปลี่ยนจาก form เป็น div เพื่อเลี่ยงบั๊กใน WebView -->
       <div class="bg-white rounded-3xl shadow-soft p-6 space-y-4 animate-fade">
-        <p class="font-bold text-brand-900">แนะนำตัวก่อนเรียน (ไม่บังคับ)</p>
+        <p class="font-bold text-brand-900">Please fill in your information</p>
         <label class="block">
-          <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Full Name (ชื่อ-สกุล)</span>
-          <input id="inName" placeholder="เช่น Somchai (ข้ามได้)" class="mt-1 w-full rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 px-4 py-3 outline-none font-semibold">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Full Name</span>
+          <input id="inName" placeholder="e.g. Somchai Jaidee" class="mt-1 w-full rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 px-4 py-3 outline-none font-semibold">
         </label>
         <div class="grid grid-cols-2 gap-3">
           <label class="block">
-            <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Class (ชั้น)</span>
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Class</span>
             <select id="inClass" class="mt-1 w-full rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 px-3 py-3 outline-none font-semibold bg-white">
-              <option value="">ไม่ระบุ</option><option>M.1/1</option><option>M.1/2</option><option>M.2/1</option><option>M.2/2</option><option>M.3/1</option><option>M.3/2</option>
+              <option value="">Select</option><option>M.1/1</option><option>M.1/2</option><option>M.2/1</option><option>M.2/2</option><option>M.3/1</option><option>M.3/2</option>
             </select>
           </label>
           <label class="block">
-            <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Number (เลขที่)</span>
-            <input id="inNo" type="number" placeholder="เช่น 12" class="mt-1 w-full rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 px-4 py-3 outline-none font-semibold">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Number</span>
+            <input id="inNo" type="number" min="1" max="60" placeholder="e.g. 12" class="mt-1 w-full rounded-2xl border-2 border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 px-4 py-3 outline-none font-semibold">
           </label>
         </div>
-        <!-- ปุ่มกดเข้าสู่บทเรียน ทำงานทันที ไม่บล็อกถ้าไม่กรอกข้อมูล -->
-        <button onclick="startLesson(null)" class="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-600 to-sky-500 text-white font-black text-lg shadow-soft transition cursor-pointer">เข้าสู่บทเรียนทันที →</button>
-        <p class="text-center text-[11px] text-slate-400">หากไม่กรอกข้อมูล ระบบจะให้เข้าเรียนในฐานะ Guest</p>
+        <!-- เปลี่ยนปุ่มให้ทำงานผ่าน onclick แทนการส่ง form -->
+        <button type="button" onclick="startLesson(null)" ontouchend="return startLessonTouch(event)" class="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-600 to-sky-500 text-white font-black text-lg shadow-soft transition cursor-pointer active:scale-[.98]">Start Learning →</button>
+        <p class="text-center text-[11px] text-slate-400">Your scores are saved on this device only.</p>
       </div>
     </div>
   </div>`;
 }
 
 function startLesson(e){
-  // ป้องกัน error ในกรณีที่ฟังก์ชันถูกเรียกด้วย event
-  if(e && typeof e.preventDefault === 'function') e.preventDefault();
-  
-  // ดึงข้อมูลจากช่องกรอก
-  let name = $('#inName').value.trim();
-  let cls = $('#inClass').value;
-  let no = $('#inNo').value;
-  
-  // ถ้าช่องกรอกว่างเปล่า ให้ใส่ค่าเริ่มต้นแทนการแจ้งเตือน
-  if(!name) name = "Guest (ผู้เยี่ยมชม)";
-  if(!cls) cls = "-";
-  if(!no) no = "-";
-  
-  // บันทึกข้อมูลและเข้าสู่หน้าบทเรียนทันที
+  if(e) e.preventDefault();
+
+  const nameEl=$('#inName'), clsEl=$('#inClass'), noEl=$('#inNo');
+  const b=document.getElementById('errBanner');
+  if(!nameEl||!clsEl||!noEl){
+    b.style.display='block';
+    b.textContent='Debug: ไม่พบ input บนหน้าจอ (nameEl='+!!nameEl+', clsEl='+!!clsEl+', noEl='+!!noEl+')';
+    return;
+  }
+  const name = nameEl.value.trim();
+  const cls = clsEl.value;
+  const no = noEl.value;
+
+  // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่ ถ้าไม่ครบให้แจ้งเตือน
+  if(!name || !cls || !no) {
+    b.style.display='block';
+    b.textContent='Debug: name="'+name+'" cls="'+cls+'" no="'+no+'" (ค่าที่ว่างคือค่าที่ยังไม่ได้กรอก/อ่านไม่ได้)';
+    return;
+  }
+  b.style.display='none';
   state.student = {name: name, cls: cls, no: no};
-  loadScores(); 
+  loadScores();
   go('home');
 }
 function logout(){ stopSpeak(); state.student=null; state.view='login'; render(); }
