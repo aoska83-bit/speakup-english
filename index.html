@@ -437,7 +437,14 @@ function shell(content,activeId){
   </div>`;
 }
 function toggleNav(){ $('#sidebar').classList.toggle('-translate-x-full'); $('#overlay').classList.toggle('hidden'); }
-function closeNav(){ if(window.innerWidth<1024){ $('#sidebar').classList.add('-translate-x-full'); $('#overlay').classList.add('hidden'); } }
+function closeNav(){ 
+  if(window.innerWidth<1024){ 
+    const sidebar = $('#sidebar');
+    const overlay = $('#overlay');
+    if(sidebar) sidebar.classList.add('-translate-x-full'); 
+    if(overlay) overlay.classList.add('hidden'); 
+  } 
+}
 
 /* ============================================================
    VIEWS
