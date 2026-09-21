@@ -105,6 +105,21 @@ function stopSpeak(){if('speechSynthesis' in window)speechSynthesis.cancel();}
 /* ============================================================
    LESSON DATA  (5 units x 3 steps)
    ============================================================ */
+
+  // ใส่รูปของคุณตรงนี้ (ชื่อ tag ต้องตรงกับด้านล่าง)
+const PIC = {
+  "restaurant,dining": "image/restaurant-cover.jpg", /* ถ้ารูปหน้าปกยังไม่มี ให้เว้นไว้ก่อนได้ครับ */
+  "restaurant,menu": "image/menu.jpg",
+  "waiter,restaurant": "image/waiter.jpg",
+  "chef,cooking": "image/chef.jpg",
+  "ordering,food": "image/order.jpg",
+  "restaurant,bill": "image/bill.jpg",
+  "fork,cutlery": "image/fork.jpg",
+  "spoon,cutlery": "image/spoon.jpg",
+  "plate,dish": "image/plate.jpg",
+  "water,glass": "image/glass.jpg",
+  "dessert,cake": "image/dessert.jpg"
+};
 const DATA = [
 {
  id:'restaurant', name:'Restaurant', icon:'🍽️', cover:'restaurant,dining', theme:'from-rose-500 to-orange-400',
