@@ -51,7 +51,7 @@ const $ = s => document.querySelector(s);
 const app = () => $('#app');
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const shuffle = a => {a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
-const photo = (tag,lock) => `https://loremflickr.com/480/360/${encodeURIComponent(tag)}?lock=${lock}`;
+const photo = (tag,lock) => `${tag}.jpg`;                             /*-----     const photo = (tag,lock) => `https://loremflickr.com/480/360/${encodeURIComponent(tag)}?lock=${lock}`;     ดึงจากเว็บ       ----*/
 const ph = emoji => `data:image/svg+xml;utf8,`+encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e0e7ff"/><stop offset="1" stop-color="#bae6fd"/></linearGradient></defs><rect width="480" height="360" fill="url(#g)"/><text x="50%" y="58%" font-size="140" text-anchor="middle">${emoji}</text></svg>`);
 const imgTag = (tag,lock,emoji,cls='') =>
@@ -105,21 +105,6 @@ function stopSpeak(){if('speechSynthesis' in window)speechSynthesis.cancel();}
 /* ============================================================
    LESSON DATA  (5 units x 3 steps)
    ============================================================ */
-
-  // ใส่รูปของคุณตรงนี้ (ชื่อ tag ต้องตรงกับด้านล่าง)
-const PIC = {
-  "restaurant,dining": "image/restaurant-cover.jpg", /* ถ้ารูปหน้าปกยังไม่มี ให้เว้นไว้ก่อนได้ครับ */
-  "restaurant,menu": "image/menu.jpg",
-  "waiter,restaurant": "image/waiter.jpg",
-  "chef,cooking": "image/chef.jpg",
-  "ordering,food": "image/order.jpg",
-  "restaurant,bill": "image/bill.jpg",
-  "fork,cutlery": "image/fork.jpg",
-  "spoon,cutlery": "image/spoon.jpg",
-  "plate,dish": "image/plate.jpg",
-  "water,glass": "image/glass.jpg",
-  "dessert,cake": "image/dessert.jpg"
-};
 const DATA = [
 {
  id:'restaurant', name:'Restaurant', icon:'🍽️', cover:'restaurant,dining', theme:'from-rose-500 to-orange-400',
@@ -604,7 +589,7 @@ function step1View(t){
    ${t.words.map((w,i)=>`
     <div class="bg-white rounded-3xl shadow-soft overflow-hidden group">
       <div class="relative h-28 sm:h-32 overflow-hidden bg-slate-100">
-        ${imgTag(w.tag,300+i,w.e,'w-full h-full object-cover group-hover:scale-110 transition duration-500')}
+        ${imgTag(w.en,300+i,w.e,'w-full h-full object-cover group-hover:scale-110 transition duration-500')}                                                                                      
         <span class="absolute top-2 left-2 text-[10px] font-black bg-white/90 text-brand-700 px-2 py-0.5 rounded-full">${i+1}</span>
       </div>
       <div class="p-3">
@@ -715,7 +700,7 @@ function vocabQuiz(t){
   const ws=t.words;
   return shuffle(ws.map((w,i)=>i)).map((i,n)=>{
     const w=ws[i];
-    if(n%2===0) return build(w.en,pick3(ws,i,'en'),{tag:w.tag,lock:300+i,e:w.e},'Look at the picture. What is it in English?');
+    if(n%2===0) return build(w.en,pick3(ws,i,'en'),{tag:w.en,lock:300+i,e:w.e},'Look at the picture. What is it in English?');
     return build(w.th,pick3(ws,i,'th'),null,`What does <span class="text-brand-700">"${w.en}"</span> mean in Thai?`);
   });
 }
